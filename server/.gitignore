@@ -1,0 +1,15 @@
+# -------------------
+# Server-specific Git Ignore
+# -------------------
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Uploads (user images, reports, etc.)
+uploads/
+
+# Logs
+npm-debug.log*
