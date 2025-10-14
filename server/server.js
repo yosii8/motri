@@ -7,6 +7,7 @@ import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
+
 const app = express();
 
 // ===== CORS =====
@@ -19,23 +20,16 @@ const allowedOrigins = [
   'https://motri-topaz.vercel.app'
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like Postman, mobile apps)
-      if (!origin) return callback(null, true);
-
-      // Allow only listed origins
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
-      console.warn(`🚫 CORS blocked request from origin: ${origin}`);
-      return callback(new Error('CORS policy violation'), false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-  })
-);
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true); // Postman or mobile apps
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS not allowed'), false);
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
+}));
 
 // ===== Body Parser =====
 app.use(express.json());
@@ -43,9 +37,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // ===== Serve Uploads =====
 app.use('/uploads', express.static(path.resolve('uploads')));
-
-// ===== Handle Preflight Requests =====
-app.options('*', cors());
 
 // ===== API Routes =====
 app.use('/api/reports', reportRoutes);
@@ -67,3 +58,5 @@ const startServer = async () => {
 };
 
 startServer();
+
+export default app; // ✅ Required for Vercel

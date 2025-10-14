@@ -1,15 +1,13 @@
 import express from 'express';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
 import { loginDirector, changePassword } from '../controllers/authController.js';
 import { protectDirector } from '../middleware/authMiddleware.js';
 import Director from '../models/Director.js';
 
-dotenv.config();
 const router = express.Router();
 
-// LOGIN (Username or Email)
+// LOGIN
 router.post('/login', loginDirector);
 
 // CHANGE PASSWORD (Protected)
