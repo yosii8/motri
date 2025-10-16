@@ -1,62 +1,69 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import path from 'path';
 import { connectDB } from './config/db.js';
 import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
-
 const app = express();
 
-// ===== CORS =====
+// ===== CORS Setup =====
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://motri-et.vercel.app',
-  'https://motri-topaz.vercel.app'
+  'https://motri-et.vercel.app',    // main production
+  'https://motri-topaz.vercel.app', // backup production
+  'http://localhost:5173',          // Vite local frontend
+  'http://localhost:3000',          // React default port
 ];
 
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true); // Postman or mobile apps
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('CORS not allowed'), false);
-  },
-  credentials: true,
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (Postman, curl)
+      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      console.log('❌ CORS blocked for origin:', origin);
+      return callback(new Error('CORS not allowed'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
-// ===== Body Parser =====
+// ===== Middleware =====
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ===== Serve Uploads =====
+// ===== Static Files (uploads) =====
 app.use('/uploads', express.static(path.resolve('uploads')));
 
 // ===== API Routes =====
 app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
 
-// ===== Test Route =====
-app.get('/', (req, res) => res.send('API Running...'));
+// ===== Root Test Route =====
+app.get('/', (req, res) => {
+  res.send('✅ API is running successfully...');
+});
 
-// ===== Start Server =====
-const PORT = process.env.PORT || 3001;
-const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-  } catch (err) {
-    console.error('Server start failed:', err);
-    process.exit(1);
-  }
-};
+// ===== Local server (only if running locally) =====
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 3001;
+  const HOST = process.env.HOST || 'localhost';
 
-startServer();
+  (async () => {
+    try {
+      await connectDB(); // Connect to MongoDB
+      app.listen(PORT, HOST, () => {
+        console.log(`🚀 Server running locally at http://${HOST}:${PORT}`);
+      });
+    } catch (err) {
+      console.error('❌ Server start failed:', err.message);
+      process.exit(1);
+    }
+  })();
+}
 
-export default app; // ✅ Required for Vercel
+// ===== Export app for Vercel =====
+export default app;

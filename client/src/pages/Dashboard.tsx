@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import autoTable from 'jspdf-autotable';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 interface Report {
@@ -32,6 +31,7 @@ interface Report {
   createdAt: string;
 }
 
+// ✅ Use environment variable for backend API URL
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 const Dashboard = () => {
@@ -45,7 +45,7 @@ const Dashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [isDirectorLoggedIn, setIsDirectorLoggedIn] = useState<boolean>(() => !!localStorage.getItem('token'));
-  const [identifier, setIdentifier] = useState(''); // username or email
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -60,7 +60,7 @@ const Dashboard = () => {
 
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [showForgotEmailInput, setShowForgotEmailInput] = useState(false); // NEW: show input only after click
+  const [showForgotEmailInput, setShowForgotEmailInput] = useState(false);
 
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
@@ -144,6 +144,7 @@ const Dashboard = () => {
     setIsLoading(true);
     setError(null);
     try {
+      // ✅ Correct endpoint: /api/reports
       const res = await fetch(`${apiUrl}/api/reports`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -175,7 +176,7 @@ const Dashboard = () => {
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }), // ✅ send identifier
+        body: JSON.stringify({ identifier, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || 'Login failed');
@@ -205,6 +206,7 @@ const Dashboard = () => {
     const token = localStorage.getItem('token');
     if (!token) return handleLogout();
     try {
+      // ✅ Correct endpoint: /api/reports/:id
       const res = await fetch(`${apiUrl}/api/reports/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -283,7 +285,7 @@ const Dashboard = () => {
 
       toast({ title: 'Success', description: data.message || 'Reset link sent to your email', variant: 'default' });
       setForgotPasswordEmail('');
-      setShowForgotEmailInput(false); // hide input after sending
+      setShowForgotEmailInput(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset link';
       toast({ title: 'Error', description: message, variant: 'destructive' });
@@ -292,6 +294,7 @@ const Dashboard = () => {
     }
   };
 
+  // ----------------- JSX -----------------
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* HEADER */}
@@ -320,9 +323,7 @@ const Dashboard = () => {
             {/* Forgot Password */}
             <div className="text-right mt-2">
               {!showForgotEmailInput && (
-                <Button variant="link" onClick={() => setShowForgotEmailInput(true)}>
-                  Forgot Password?
-                </Button>
+                <Button variant="link" onClick={() => setShowForgotEmailInput(true)}>Forgot Password?</Button>
               )}
               {showForgotEmailInput && (
                 <>
@@ -401,6 +402,7 @@ const Dashboard = () => {
                                 src={`${apiUrl}/${report.image.replace(/\\/g, '/')}`}
                                 alt="Report"
                                 className="w-full h-auto rounded object-cover"
+                                onError={e => (e.currentTarget.src = '/placeholder.png')}
                               />
                             </div>
                           )}
