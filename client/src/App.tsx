@@ -11,12 +11,16 @@ import ReportForm from "./pages/ReportForm";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import LoginPrompt from "./pages/LoginPrompt";
-import ResetPassword from "./pages/ResetPassword"; // ✅ added
-import ForgotPassword from "./pages/ForgotPassword"; // ✅ optional but good to have
+import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 import "./i18n";
 
 const queryClient = new QueryClient();
+
+interface LoginPromptProps {
+  setUserEmail: (email: string | null) => void;
+}
 
 const App = () => {
   // Store logged-in user's email
@@ -59,7 +63,7 @@ const App = () => {
               {/* Forgot Password Page */}
               <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              {/* Reset Password Page — ✅ this is the one linked in the email */}
+              {/* Reset Password Page */}
               <Route path="/reset-password/:token" element={<ResetPassword />} />
 
               {/* Report Form (protected) */}

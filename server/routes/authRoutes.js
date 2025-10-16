@@ -13,9 +13,14 @@ router.post('/login', loginDirector);
 // CHANGE PASSWORD (Protected)
 router.put('/change-password', protectDirector, changePassword);
 
-// Helper: create email transporter
+// Helper: create email transporter safely
 function createTransporter() {
-  if (process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  if (
+    process.env.SMTP_HOST &&
+    process.env.SMTP_PORT &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS
+  ) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -27,14 +32,17 @@ function createTransporter() {
     });
   }
 
-  // fallback to Gmail
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  throw new Error('Email credentials are not configured in environment variables');
 }
 
 // ===== VERIFY RESET TOKEN =====
@@ -51,21 +59,21 @@ router.get('/reset-password/:token', async (req, res) => {
     });
 
     if (!director) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid or expired reset token.' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token.',
       });
     }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Token is valid' 
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid',
     });
   } catch (error) {
     console.error('Token verification error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Server error while verifying token.' 
+    res.status(500).json({
+      success: false,
+      message: 'Server error while verifying token.',
     });
   }
 });
@@ -87,24 +95,37 @@ router.post('/forgot-password', async (req, res) => {
     director.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await director.save();
 
-    // Build reset URL using FRONTEND_URL
+    // Build reset URL
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const resetUrl = `${frontendUrl.replace(/\/$/, '')}/reset-password/${token}`;
+    console.log('Password reset URL (for testing):', resetUrl);
 
-    console.log('Password reset URL (for testing):', resetUrl); // Remove in production
+    // Create transporter safely
+    let transporter;
+    try {
+      transporter = createTransporter();
+    } catch (err) {
+      console.error('Email transporter error:', err.message);
+      return res.status(500).json({ message: 'Email configuration error.' });
+    }
 
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER || process.env.SMTP_USER,
-      to: director.email,
-      subject: 'Password Reset Request',
-      text:
-        `Hi ${director.username || 'there'},\n\n` +
-        `You requested a password reset. Click the link below to reset your password. This link expires in 1 hour.\n\n` +
-        `${resetUrl}\n\n` +
-        `If you did not request this, please ignore this email.\n\n` +
-        `— Your Team`,
-    });
+    // Send email
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER || process.env.SMTP_USER,
+        to: director.email,
+        subject: 'Password Reset Request',
+        text:
+          `Hi ${director.username || 'there'},\n\n` +
+          `You requested a password reset. Click the link below to reset your password. This link expires in 1 hour.\n\n` +
+          `${resetUrl}\n\n` +
+          `If you did not request this, please ignore this email.\n\n` +
+          `— Your Team`,
+      });
+    } catch (emailErr) {
+      console.error('Forgot password email error:', emailErr.message);
+      return res.status(500).json({ message: 'Failed to send password reset email.' });
+    }
 
     res.status(200).json({ message: 'Password reset link sent to your email.' });
   } catch (error) {

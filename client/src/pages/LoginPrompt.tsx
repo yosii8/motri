@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 
-const LoginPrompt: React.FC = () => {
+interface LoginPromptProps {
+  setUserEmail: (email: string | null) => void;
+}
+
+const LoginPrompt: React.FC<LoginPromptProps> = ({ setUserEmail }) => {
   const [email, setEmail] = useState<string>("");
   const navigate = useNavigate();
 
@@ -16,6 +20,7 @@ const LoginPrompt: React.FC = () => {
       return;
     }
     localStorage.setItem("userEmail", email);
+    setUserEmail(email); // Update the state in App component
     navigate("/report");
   };
 

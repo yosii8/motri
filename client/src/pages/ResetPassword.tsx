@@ -83,7 +83,7 @@ const ResetPassword: React.FC = () => {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.trim().length < 6) {
       toast({
         title: "Error",
         description: "Password must be at least 6 characters long",
@@ -98,7 +98,7 @@ const ResetPassword: React.FC = () => {
       const res = await fetch(`${API_URL}/api/auth/reset-password/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword: password }),
+        body: JSON.stringify({ newPassword: password.trim() }),
       });
 
       const data = await res.json();
@@ -110,14 +110,13 @@ const ResetPassword: React.FC = () => {
           variant: "default",
         });
         
-        // Redirect to login page after successful reset
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+        setTimeout(() => navigate("/login"), 2000);
       } else {
+        console.error("Reset password error response:", data);
         throw new Error(data.message || "Failed to reset password");
       }
     } catch (error) {
+      console.error("Reset password submit error:", error);
       const message = error instanceof Error ? error.message : "Something went wrong";
       toast({
         title: "Error",
@@ -129,7 +128,7 @@ const ResetPassword: React.FC = () => {
     }
   };
 
-  // Show loading while verifying token
+  // Loading UI
   if (verifyingToken) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
@@ -145,7 +144,7 @@ const ResetPassword: React.FC = () => {
     );
   }
 
-  // Show invalid token message
+  // Invalid token UI
   if (tokenValid === false) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
@@ -167,7 +166,7 @@ const ResetPassword: React.FC = () => {
     );
   }
 
-  // Show reset password form
+  // Reset password form
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-md">
