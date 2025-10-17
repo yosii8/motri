@@ -7,9 +7,9 @@ dotenv.config();
 const createDirector = async () => {
   await connectDB();
 
-  const username = 'Motrii';
+  const username = 'Motri';
   const email = 'yosefasefa8889@gmail.com';
-  const password = 'yosii1234';
+  const password = 'yosii888';
 
   const existing = await Director.findOne({ $or: [{ username }, { email }] });
   if (existing) {
